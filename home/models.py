@@ -4,6 +4,10 @@ from datetime import datetime
 from django.contrib.postgres.fields import ArrayField
 
 # Create your models here.
+
+##############################################################
+#######    BASE TABLES ################################
+##############################################################
 class Institution(models.Model):
     # Default generated Fields
     modifiedOn = models.DateTimeField(default=datetime.now())
@@ -38,6 +42,7 @@ class Institution(models.Model):
     mission_statement = models.TextField()
     visibility = models.BooleanField(default=True)
 
+# Departmental Table
 class Department(models.Model):
     # Default generated Fields
     name = models.CharField(max_length=100)
@@ -63,6 +68,7 @@ class Department(models.Model):
                     blank=True,null=True)
     visibility = models.BooleanField(default=True)
 
+# Class, Staff and Courses
 class Staff(models.Model):
     name = models.CharField(max_length=100)
     dob  = models.DateField()
@@ -91,10 +97,12 @@ class Staff(models.Model):
                             ('F', 'Finance Secretary'),
                             ('ITS', 'IT Support'),
                             ('T', 'Teachers'),
+                            ('PE', 'Physical Education'),
                             ('SS', 'Support Staff'),
                             ('EC', 'Election Commitee'),
                             ('TT', 'Time Table Commitee'),
                             ('AC', 'Alumni Coordinators'),
+                            ('W', 'Warden'),
                             ('S', 'Security')])
     alloted_leave = models.IntegerField()
     available_leave = models.IntegerField()
@@ -108,7 +116,7 @@ class Staff(models.Model):
     files = models.FileField(upload_to='media/files/StudentFiles',null=True)
     photo = models.ImageField(upload_to='media/files/StudentFiles',null=True)
 
-class Course(models.Model):
+class Course(models.Model): # This table is nothing but Subject
     name = models.CharField(max_length=50)
     department = models.ForeignKey(Department,
                     on_delete=models.CASCADE)
@@ -139,6 +147,7 @@ class Class(models.Model):
     # Set visibility to false if class needs to be deleted
     visibility = models.BooleanField(default=True)
 
+# This table represents relationship between class, course, staff.
 class ClassLink(models.Model):
     _class = models.ForeignKey(Class, on_delete=models.CASCADE)
     course = models.ForeignKey(Course, on_delete=models.CASCADE)
@@ -147,18 +156,6 @@ class ClassLink(models.Model):
 class TeachingBook(models.Model):
     class_link = models.ForeignKey(ClassLink, on_delete=models.CASCADE)
     _datetime = models.DateTimeField(default=datetime.now())
-
-class StaffAttendance(models.Model):
-    staff = models.ForeignKey(Staff,on_delete=models.CASCADE)
-    _date = models.DateField(default=datetime.today())
-    attendance = models.CharField(max_length=20,choices=[
-                    ('P','Present'),
-                    ('A','Absent'),
-                    ('PL', 'Paid Leave'),
-                    ('EL', 'Emergency Leave'),
-                    ('CL', 'Casual Leave'),
-                    ('PAL', 'Paternity Leave'),
-                    ('ML', 'Maternity Leave')])
 
 class Student(models.Model):
     name = models.CharField(max_length=100)
@@ -195,6 +192,19 @@ class Student(models.Model):
     files = models.FileField(upload_to='media/files/StudentFiles',null=True)
     photo = models.ImageField(upload_to='media/files/StudentFiles',null=True)
 
+# Attendance Details
+class StaffAttendance(models.Model):
+    staff = models.ForeignKey(Staff,on_delete=models.CASCADE)
+    _date = models.DateField(default=datetime.today())
+    attendance = models.CharField(max_length=20,choices=[
+                    ('P','Present'),
+                    ('A','Absent'),
+                    ('PL', 'Paid Leave'),
+                    ('EL', 'Emergency Leave'),
+                    ('CL', 'Casual Leave'),
+                    ('PAL', 'Paternity Leave'),
+                    ('ML', 'Maternity Leave')])
+
 class StudentAttendance(models.Model):
     student = models.ForeignKey(Student,on_delete=models.CASCADE)
     _datetime = models.DateTimeField(default=datetime.now())
@@ -222,7 +232,7 @@ class Fine(models.Model):
                     ('P', 'Paid'),
                     ('U', 'Unpaid')])
 
-
+# allowances
 class Salary(models.Model):
     staff = models.ForeignKey(Staff,on_delete=models.CASCADE)
     _date = models.DateField(default=datetime.now())
@@ -273,7 +283,6 @@ class FinancialReport(models.Model):
     generated_by = models.ForeignKey(Staff,on_delete=models.CASCADE)
     report_file = models.FileField(upload_to='media/files/FinancialReports')
 
-
 ##############################################################
 #######    Examination Department ############################
 ##############################################################
@@ -318,7 +327,7 @@ class Books(models.Model):
     category = models.CharField(max_length=100)
     availability = models.BooleanField(default=True)
 
-class BookBorrowing(models.Model):
+class BookTransaction(models.Model):
     book = models.ForeignKey(Books,on_delete=models.CASCADE)
     staff = models.ForeignKey(Staff,on_delete=models.CASCADE)
     student = models.ForeignKey(Student,on_delete=models.CASCADE)
@@ -329,14 +338,139 @@ class BookBorrowing(models.Model):
                                 ('R', 'Returned')])
 
 ##############################################################
-######### Sports, Events and Facilities  #####################
+######### Sports Section Only  ###############################
 ##############################################################
 
 class Sports(models.Model):
-    pass
+    name = models.CharField(max_length=100)
+    description = models.TextField()
 
-class Events(models.Model):
-    pass
+class SportsTeam(models.Model):
+    name = models.CharField(max_length=100)
+    sports = models.ForeignKey(Sports, on_delete=models.CASCADE)
+    coach = models.ForeignKey(Staff, on_delete=models.CASCADE)
 
-class Facilities(models.Model):
-    pass
+class SportsStudent(models.Model):
+    student = models.ForeignKey(Student,on_delete=models.CASCADE)
+    team = models.ForeignKey(SportsTeam,on_delete=models.CASCADE)
+
+class SportsCoach(models.Model):
+    teacher = models.ForeignKey(Staff,on_delete=models.CASCADE)
+    sport = models.ForeignKey(Sports,on_delete=models.CASCADE)
+
+class SportsInventory(models.Model):
+    name = models.CharField(max_length=100)
+    quantity = models.IntegerField()
+    condition = models.CharField(max_length=100)
+    description = models.TextField()
+
+class SportsInventoryTranasaction(models.Model):
+    equipment = models.ForeignKey(SportsInventory,on_delete=models.CASCADE)
+    student = models.ForeignKey(Student,on_delete=models.CASCADE)
+    borrowing_date = models.DateField(default=datetime.now())
+    return_date = models.DateField(null=True)
+    status = models.CharField(max_length=10,default='B',
+                        choices=[('B', 'Borrowed'),
+                                ('R', 'Returned')])
+ 
+
+##############################################################
+########## Event Section Only  ###############################
+##############################################################
+class Event(models.Model):
+    name = models.CharField(max_length=100)
+    event_startTime = models.DateTimeField(default=datetime.now())
+    event_endTime = models.DateTimeField(null=True)
+    location = models.TextField()
+    description = models.TextField()
+    department = models.ForeignKey(Department,on_delete=models.CASCADE)
+    contact_person = models.ForeignKey(Staff,on_delete=models.CASCADE)
+
+
+
+##############################################################
+############# Hostel Management  #############################
+##############################################################
+class Hostel(models.Model):
+    name = models.CharField(max_length=100)
+    capacity = models.IntegerField()
+    warden = models.ForeignKey(Staff,on_delete=models.CASCADE)
+
+class HostelStudent(models.Model):
+    student = models.ForeignKey(Student,on_delete=models.CASCADE)
+    roomNumber = models.CharField(default=-1,max_length=50)
+    status = models.CharField(max_length=20,
+                        choices=[('A', 'Allotted'),
+                                 ('P', 'Pending'),
+                                 ('RE', 'Rejected'),
+                                 ('R', 'Reserved'),
+                                 ('U', 'Unknown'),
+                                 ('W', 'Waiting')])
+    start_date = models.DateField(default=datetime.now())
+    end_date = models.DateField(null=True)
+    description = models.TextField()
+    fees = models.IntegerField()
+
+##############################################################
+########## Inventory Management  #############################
+##############################################################
+
+class ClassInventory(models.Model):
+    name = models.CharField(max_length=100)
+    _class = models.ForeignKey(Class,on_delete=models.CASCADE)
+    condition = models.CharField()
+    description = models.TextField()
+    state = models.CharField(max_length=10,
+                        choices=[('A', 'Available'),
+                                 ('B', 'Broken'),
+                                 ('R', 'Restricted'),
+                                 ('NA', 'Not Available'),
+                                 ('L', 'Lost'),
+                                 ('U', 'Unknown'),
+                                 ('D', 'Decommissioned')])
+
+class DepartmentInventory(models.Model):
+    name = models.CharField(max_length=100)
+    department = models.ForeignKey(Department,on_delete=models.CASCADE)
+    condition = models.CharField()
+    description = models.TextField()
+    state = models.CharField(max_length=10,
+                        choices=[('A', 'Available'),
+                                 ('B', 'Broken'),
+                                 ('R', 'Restricted'),
+                                 ('NA', 'Not Available'),
+                                 ('L', 'Lost'),
+                                 ('U', 'Unknown'),
+                                 ('D', 'Decommissioned')])
+
+class InstitutionInventory(models.Model):
+    name = models.CharField(max_length=100)
+    institution = models.ForeignKey(Institution,on_delete=models.CASCADE)
+    condition = models.CharField()
+    description = models.TextField()
+    state = models.CharField(max_length=20,
+                        choices=[('A', 'Available'),
+                                 ('B', 'Broken'),
+                                 ('R', 'Restricted'),
+                                 ('NA', 'Not Available'),
+                                 ('L', 'Lost'),
+                                 ('U', 'Unknown'),
+                                 ('D', 'Decommissioned')])
+
+class HostelInventory(models.Model):
+    name = models.CharField(max_length=100)
+    hostel = models.ForeignKey(Hostel,on_delete=models.CASCADE)
+    condition = models.CharField()
+    description = models.TextField()
+    state = models.CharField(max_length=20,
+                        choices=[('A', 'Available'),
+                                 ('B', 'Broken'),
+                                 ('R', 'Restricted'),
+                                 ('NA', 'Not Available'),
+                                 ('L', 'Lost'),
+                                 ('U', 'Unknown'),
+                                 ('D', 'Decommissioned')])
+
+
+
+

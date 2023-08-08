@@ -82,7 +82,7 @@ DATABASES = {
     # }
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'institution',
+        'NAME': 'institution_v2',
         'USER': 'kabeer',
         'PASSWORD': 'Ahmed@123',
         'HOST': 'localhost',
